@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Savetovalište sa Farmaceutom</title>
+</head>
+<body>
+    <h1>Postavite pitanje farmaceutu</h1>
+    <form action="/submit" method="POST">
+        <label for="name">Ime:</label>
+        <input type="text" id="name" name="name" required>
+        
+        <label for="question">Pitanje:</label>
+        <textarea id="question" name="question" required></textarea>
+        
+        <button type="submit">Pošalji</button>
+    </form>
+
+    <h2>Pregled svih upita</h2>
+    <a href="/inquiries">Prikaži upite</a>
+</body>
+</html>
+<h2>Pitaj AI</h2>
+<form id="ai-question-form">
+  <input type="text" id="ai-question" placeholder="Postavite pitanje" required>
+  <button type="submit">Pitaj</button>
+</form>
+<div id="ai-response"></div>
+
+<script>
+  const aiForm = document.getElementById('ai-question-form');
+  const aiResponseDiv = document.getElementById('ai-response');
+
+  aiForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const question = document.getElementById('ai-question').value;
+
+    const response = await fetch('/ask-ai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ question }),
+    });
+
+    const answer = await response.text();
+    aiResponseDiv.innerText = answer;
+  });
+</script>
