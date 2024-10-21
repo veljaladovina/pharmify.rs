@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose(); // Uključujemo SQLite
-const OpenAI = require('openai'); // Uključujemo OpenAI
+const { Configuration, OpenAIApi } = require('openai'); // Uključujemo OpenAI
 const mongoose = require('mongoose'); // Uključujemo mongoose za MongoDB
 const bcrypt = require('bcryptjs'); // Uključujemo bcrypt za hashovanje lozinki
 const User = require('./models/user'); // Uključujemo User model
@@ -18,11 +18,11 @@ app.get('/', (req, res) => {
 });
 
 // Konfiguracija OpenAI
-const configuration = {
+const configuration = new Configuration({
     apiKey: process.env.OPENAI_API_KEY, // Uveri se da imaš OPENAI_API_KEY u .env datoteci
-};
+});
 
-const openai = new OpenAI(configuration); // Inicijalizuj OpenAI
+const openai = new OpenAIApi(configuration); // Inicijalizuj OpenAI
 
 // Povezivanje sa MongoDB Atlas
 mongoose.connect(process.env.MONGO_URI, {
@@ -39,24 +39,18 @@ app.post('/register', async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        // Proveri da li korisnik već postoji
         const existingUser = await User.findOne({ username });
         if (existingUser) {
             return res.status(400).json({ message: 'Korisnik već postoji' });
         }
 
-        // Hashuj lozinku
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Kreiraj novog korisnika
         const newUser = new User({
             username,
             password: hashedPassword,
         });
 
-        // Sačuvaj korisnika u bazi
         await newUser.save();
-
         res.status(201).json({ message: 'Korisnik uspešno registrovan!' });
     } catch (error) {
         console.error('Greška prilikom registracije:', error);
@@ -69,13 +63,11 @@ app.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        // Proveri da li korisnik postoji
         const user = await User.findOne({ username });
         if (!user) {
             return res.status(400).json({ message: 'Korisnik ne postoji' });
         }
 
-        // Uporedi hashovanu lozinku sa unešenom lozinkom
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: 'Neispravna lozinka' });
@@ -92,9 +84,8 @@ app.post('/login', async (req, res) => {
 
 // Ruta za skladištenje korisničkih upita u SQLite bazu podataka
 app.post('/submit-query', (req, res) => {
-    const { query } = req.body; // Uzmi korisnički upit iz tela zahteva
+    const { query } = req.body;
 
-    // Otvori ili kreiraj SQLite bazu podataka
     let db = new sqlite3.Database('./queries.db', (err) => {
         if (err) {
             console.error(err.message);
@@ -102,14 +93,12 @@ app.post('/submit-query', (req, res) => {
         console.log('Povezan sa SQLite bazom podataka.');
     });
 
-    // Kreiraj tabelu ako ne postoji
     db.run(`CREATE TABLE IF NOT EXISTS queries (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         query TEXT NOT NULL,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    // Skladišti upit u bazu podataka
     db.run(`INSERT INTO queries(query) VALUES(?)`, [query], function (err) {
         if (err) {
             return console.error(err.message);
@@ -117,7 +106,6 @@ app.post('/submit-query', (req, res) => {
         res.status(201).json({ id: this.lastID, query });
     });
 
-    // Zatvori bazu podataka
     db.close((err) => {
         if (err) {
             console.error(err.message);
@@ -128,21 +116,21 @@ app.post('/submit-query', (req, res) => {
 
 // Ruta za slanje upita AI-u
 app.post('/ask-ai', async (req, res) => {
-    const question = req.body.question; // Uzmi pitanje iz tela zahteva
+    const question = req.body.question;
     console.log('Primljen upit:', question);
 
     try {
-        const response = await openai.chat.completions.create({
-            model: 'gpt-3.5-turbo', // Model koji koristiš
-            messages: [{ role: 'user', content: question }], // Upit
+        const response = await openai.createChatCompletion({
+            model: 'gpt-3.5-turbo',
+            messages: [{ role: 'user', content: question }],
         });
 
-        const answer = response.choices[0].message.content; // Odgovor od OpenAI
+        const answer = response.data.choices[0].message.content;
         console.log('Odgovor od OpenAI:', answer);
-        res.json({ answer }); // Pošalji odgovor klijentu
+        res.json({ answer });
     } catch (error) {
         console.error('Greška prilikom komunikacije sa OpenAI:', error);
-        res.status(500).send('Došlo je do greške prilikom obrade vašeg zahteva.'); // Greška servera
+        res.status(500).send('Došlo je do greške prilikom obrade vašeg zahteva.');
     }
 });
 

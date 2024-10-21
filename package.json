@@ -1,21 +1,16 @@
 {
-  "name": "savetovaliste",
+  "name": "pharmify",
   "version": "1.0.0",
-  "main": "server.js", // ili "index.js" ako je taj glavni fajl
+  "main": "server.js",
   "scripts": {
-    "start": "node server.js", // Dodato za pokretanje aplikacije
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"
   },
-  "keywords": [],
-  "author": "Veljko Djordjevic", 
-  "license": "ISC",
-  "description": "Aplikacija za online savetovalište sa farmaceutom", // Opis tvoje aplikacije
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "mongoose": "^8.7.1",
-    "openai": "^4.67.3",
+    "openai": "^4.6.0",
     "sqlite3": "^5.1.7"
   }
 }
